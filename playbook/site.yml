@@ -1,0 +1,51 @@
+- name: Install Aspia
+  hosts: aspia
+  become: yes
+  become_user: root
+  remote_user: ubuntu
+
+  tasks:
+    - name: Install router
+      apt:
+        deb: https://github.com/dchapyshev/aspia/releases/download/v2.4.0/aspia-router-2.4.0-x86_64.deb
+
+    - name: Create basic config router
+      ansible.builtin.command: "aspia_router --create-config"
+
+    - name: Read file content
+      shell: cat /etc/aspia/router.pub
+      register: key_pub
+
+    - name: Enable and start aspia-router
+      ansible.builtin.systemd:
+        name: aspia-router
+        state: started
+        enabled: yes
+
+    - name: Install relay
+      apt:
+        deb: https://github.com/dchapyshev/aspia/releases/download/v2.4.0/aspia-relay-2.4.0-x86_64.deb
+
+    - name: Create basic config relay
+      ansible.builtin.command: "aspia_relay --create-config"
+
+    - name: Copy config router.json
+      template:
+        src: templates/relay.json
+        dest: /etc/aspia/relay.json
+
+    - name: Add RouterPublicKey
+      replace:
+        path: /etc/aspia/relay.json
+        regexp: '    "RouterPublicKey": ""'
+        replace: '    "RouterPublicKey": "{{ key_pub["stdout"] }}"'
+
+    - name: Enable and start aspia-relay
+      ansible.builtin.systemd:
+        name: aspia-relay
+        state: started
+        enabled: yes
+
+    - name: Print the value of a variable
+      debug:
+        msg: "key_pub: {{ key_pub['stdout'] }}"

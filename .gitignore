@@ -1,0 +1,5 @@
+/terraform/key.json
+/terraform/terraform.tfstate.d/
+/terraform/.terraform.lock.hcl
+/terraform/.terraform/
+.idea/
